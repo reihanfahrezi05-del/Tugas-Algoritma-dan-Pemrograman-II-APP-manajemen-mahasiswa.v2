@@ -6,62 +6,10 @@ import os
 
 FILE_NAME = "mahasiswa.json"
 
-# UI Configuration (Gamified / Duolingo Style)
 st.set_page_config(
-    page_title="Akademi Mahasiswa",
-    page_icon="🎓",
-    layout="wide",
-    initial_sidebar_state="expanded"
+    page_title="Manajemen Mahasiswa",
+    layout="centered"
 )
-
-st.markdown("""
-<style>
-    /* Duolingo color palette and styling */
-    .stApp {
-        background-color: #F7F9FC;
-    }
-    h1, h2, h3 {
-        color: #58CC02;
-        font-family: 'Comic Sans MS', 'Nunito', sans-serif;
-        font-weight: bold;
-    }
-    .stButton>button {
-        background-color: #58CC02;
-        color: white;
-        border-radius: 16px;
-        border: none;
-        padding: 10px 24px;
-        font-size: 16px;
-        font-weight: bold;
-        box-shadow: 0 4px 0 #58A700;
-        transition: all 0.1s;
-    }
-    .stButton>button:active {
-        transform: translateY(4px);
-        box-shadow: 0 0 0 #58A700;
-    }
-    div[data-baseweb="input"] > div {
-        border-radius: 12px;
-        border: 2px solid #E5E5E5;
-        background-color: white;
-    }
-    .metric-card {
-        background: white;
-        border-radius: 16px;
-        padding: 20px;
-        border: 2px solid #E5E5E5;
-        text-align: center;
-        box-shadow: 0 4px 0 #E5E5E5;
-    }
-    .sidebar-header {
-        font-size: 24px;
-        font-weight: bold;
-        color: #CE82FF;
-        text-align: center;
-        margin-bottom: 20px;
-    }
-</style>
-""", unsafe_allow_html=True)
 
 
 class Person:
@@ -96,15 +44,13 @@ def load_data():
         try:
             with open(FILE_NAME, "r") as file:
                 raw_data = json.load(file)
-                # Convert raw JSON dicts to Mahasiswa objects
                 return [Mahasiswa.from_dict(item) for item in raw_data]
-        except (json.JSONDecodeError, KeyError):
-            st.error("⚠️ File JSON rusak! Memulai database baru.")
+        except:
+            st.error("Error baca data JSON. Mulai dari awal.")
             return []
     return []
 
 def save_data(data):
-    # Convert Mahasiswa objects to dicts for JSON
     dict_data = [mhs.to_dict() for mhs in data]
     with open(FILE_NAME, "w") as file:
         json.dump(dict_data, file, indent=4)
@@ -129,124 +75,97 @@ def is_nim_exist(data, nim):
 
 # --- APP LOGIC ---
 
-st.sidebar.markdown('<div class="sidebar-header">🎒 Misi Hari Ini</div>', unsafe_allow_html=True)
+st.title("Tugas Manajemen Data Mahasiswa")
 
-menu = st.sidebar.radio(
-    "Pilih Misi:",
-    ["🌟 Rekrut Siswa Baru", "📖 Buku Daftar Siswa", "🔍 Lacak Siswa", "⚙️ Edit & Hapus", "🏆 Ranking (Sort)"]
+menu = st.sidebar.selectbox(
+    "Pilih Menu",
+    ["Tambah Data", "Lihat Data", "Cari Data", "Edit & Hapus Data", "Urutkan Data"]
 )
 
 data = load_data()
 
-st.title("🎓 Akademi Master Data")
-
-if menu == "🌟 Rekrut Siswa Baru":
-    st.header("📝 Formulir Pendaftaran")
-    st.markdown("Isi data dengan benar untuk mendapatkan XP!")
+if menu == "Tambah Data":
+    st.subheader("Tambah Mahasiswa Baru")
     
-    col1, col2 = st.columns(2)
-    with col1:
-        nim = st.text_input("💳 NIM (5 Digit Angka)", max_chars=5)
-    with col2:
-        nama = st.text_input("👤 Nama Lengkap Siswa")
-        
-    ipk = st.number_input("⭐ Skor IPK Awal", min_value=0.0, max_value=4.0, step=0.01)
+    nim = st.text_input("NIM")
+    nama = st.text_input("Nama")
+    ipk = st.number_input("IPK", min_value=0.0, max_value=4.0, step=0.01)
 
-    if st.button("🚀 Daftarkan Sekarang!"):
+    if st.button("Simpan"):
         try:
             if not re.match(r'^\d{5}$', nim):
-                raise Exception("NIM harus tepat 5 digit angka!")
+                raise Exception("NIM harus 5 digit angka")
             if is_nim_exist(data, nim):
-                raise Exception("Aduh! NIM ini sudah terdaftar. Gunakan NIM lain.")
+                raise Exception("NIM sudah terdaftar!")
             if not nama.strip():
-                raise Exception("Nama tidak boleh kosong!")
-            if ipk == 0.0:
-                st.warning("Catatan: Mendaftar dengan IPK 0.0. Apakah kamu yakin? Tapi tetap disimpan.")
+                raise Exception("Nama tidak boleh kosong")
             
-            # Create object and save
             mhs_baru = Mahasiswa(nim=nim, nama=nama.strip(), ipk=ipk)
             data.append(mhs_baru)
             save_data(data)
             
-            st.success("🎉 Berhasil! Kamu dapat +50 XP! Siswa telah terdaftar.")
-            st.balloons()
+            st.success("Data berhasil disimpan!")
             
         except Exception as e:
-            st.error(f"❌ Misi Gagal: {str(e)}")
+            st.error(str(e))
 
-elif menu == "📖 Buku Daftar Siswa":
-    st.header("📚 Siswa Terdaftar")
+elif menu == "Lihat Data":
+    st.subheader("Daftar Mahasiswa")
     
     if len(data) == 0:
-        st.info("Krik krik... Akademi masih kosong. Ayo rekrut siswa!")
+        st.warning("Belum ada data.")
     else:
-        # Konversi object back to dict buat visualisasi tabel
         df_data = [mhs.to_dict() for mhs in data]
-        st.dataframe(df_data, use_container_width=True)
-        
-        st.markdown(f'<div class="metric-card"><h3>Total Siswa</h3><h1>{len(data)}</h1></div>', unsafe_allow_html=True)
+        st.dataframe(df_data)
 
-elif menu == "🔍 Lacak Siswa":
-    st.header("🕵️‍♂️ Mode Detektif")
-    cari = st.text_input("🔍 Masukkan NIM Target (5 Digit)")
+elif menu == "Cari Data":
+    st.subheader("Cari Mahasiswa")
+    cari = st.text_input("Masukkan NIM")
     
-    if st.button("Cari Target!"):
-        if not re.match(r'^\d{5}$', cari):
-            st.error("NIM harus 5 digit angka bro!")
+    if st.button("Cari"):
+        hasil = linear_search(data, cari)
+        if hasil:
+            st.success("Data ditemukan!")
+            st.write(f"NIM: {hasil.get_nim()}")
+            st.write(f"Nama: {hasil.get_nama()}")
+            st.write(f"IPK: {hasil.get_ipk()}")
         else:
-            hasil = linear_search(data, cari)
-            if hasil:
-                st.success("🎯 Target Ditemukan!")
-                col1, col2, col3 = st.columns(3)
-                col1.metric("NIM", hasil.get_nim())
-                col2.metric("Nama", hasil.get_nama())
-                col3.metric("IPK", hasil.get_ipk())
-            else:
-                st.error("👻 Siswa menghilang! Data tidak ditemukan.")
+            st.error("Data tidak ditemukan.")
 
-elif menu == "⚙️ Edit & Hapus":
-    st.header("🛠️ Bengkel Data")
+elif menu == "Edit & Hapus Data":
+    st.subheader("Update / Delete Mahasiswa")
     
     if len(data) == 0:
-        st.info("Belum ada data untuk diedit.")
+        st.warning("Belum ada data.")
     else:
-        nim_edit = st.selectbox("Pilih Siswa (Berdasarkan NIM):", [mhs.get_nim() for mhs in data])
+        nim_edit = st.selectbox("Pilih Data (NIM):", [mhs.get_nim() for mhs in data])
         target = linear_search(data, nim_edit)
         
         if target:
-            st.markdown("### Update Data")
-            new_nama = st.text_input("Nama Baru", value=target.get_nama())
-            new_ipk = st.number_input("IPK Baru", min_value=0.0, max_value=4.0, step=0.01, value=target.get_ipk())
+            new_nama = st.text_input("Nama", value=target.get_nama())
+            new_ipk = st.number_input("IPK", min_value=0.0, max_value=4.0, step=0.01, value=target.get_ipk())
             
-            col_u, col_d = st.columns(2)
-            with col_u:
-                if st.button("💾 Simpan Perubahan"):
-                    if not new_nama.strip():
-                        st.error("Nama tidak boleh kosong!")
-                    else:
-                        # Update data (manual hapus lalu insert object baru, krn private attr)
-                        data = [m for m in data if m.get_nim() != target.get_nim()]
-                        data.append(Mahasiswa(target.get_nim(), new_nama.strip(), new_ipk))
-                        save_data(data)
-                        st.success("✨ Data berhasil di-upgrade! +20 XP")
-            
-            with col_d:
-                if st.button("🧨 Hapus Data (Drop out)"):
+            if st.button("Update"):
+                if not new_nama.strip():
+                    st.error("Nama tidak boleh kosong")
+                else:
                     data = [m for m in data if m.get_nim() != target.get_nim()]
+                    data.append(Mahasiswa(target.get_nim(), new_nama.strip(), new_ipk))
                     save_data(data)
-                    st.success("🔥 Data dihapus! Sayonara.")
-                    st.rerun()
+                    st.success("Data diupdate!")
+            
+            if st.button("Hapus"):
+                data = [m for m in data if m.get_nim() != target.get_nim()]
+                save_data(data)
+                st.success("Data dihapus!")
+                st.rerun()
 
-elif menu == "🏆 Ranking (Sort)":
-    st.header("📊 Papan Peringkat (Berdasarkan NIM)")
-    st.markdown("Bubble Sort bekerja di balik layar...")
+elif menu == "Urutkan Data":
+    st.subheader("Sorting Mahasiswa")
     
-    if st.button("Urutkan Data Sekarang!"):
-        if len(data) < 2:
-            st.info("Data kurang dari 2. Tidak perlu diurutkan.")
-        else:
-            data = bubble_sort(data)
-            save_data(data)
-            st.success("🔀 Sorting Selesai! XP +10")
-            df_data = [mhs.to_dict() for mhs in data]
-            st.dataframe(df_data, use_container_width=True)
+    if st.button("Urutkan Berdasarkan NIM"):
+        data = bubble_sort(data)
+        save_data(data)
+        st.success("Data berhasil diurutkan!")
+        df_data = [mhs.to_dict() for mhs in data]
+        st.dataframe(df_data)
