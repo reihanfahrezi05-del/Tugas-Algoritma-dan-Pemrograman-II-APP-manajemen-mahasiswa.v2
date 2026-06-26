@@ -87,14 +87,14 @@ data = load_data()
 if menu == "Tambah Data":
     st.subheader("Tambah Mahasiswa Baru")
     
-    nim = st.text_input("NIM")
+    nim = st.text_input("NIM", max_chars=12)
     nama = st.text_input("Nama")
     ipk = st.number_input("IPK", min_value=0.0, max_value=4.0, step=0.01)
 
     if st.button("Simpan"):
         try:
-            if not re.match(r'^\d{5}$', nim):
-                raise Exception("NIM harus 5 digit angka")
+            if not re.match(r'^\d{12}$', nim):
+                raise Exception("NIM harus 12 digit angka")
             if is_nim_exist(data, nim):
                 raise Exception("NIM sudah terdaftar!")
             if not nama.strip():
@@ -120,7 +120,7 @@ elif menu == "Lihat Data":
 
 elif menu == "Cari Data":
     st.subheader("Cari Mahasiswa")
-    cari = st.text_input("Masukkan NIM")
+    cari = st.text_input("Masukkan NIM", max_chars=12)
     
     if st.button("Cari"):
         hasil = linear_search(data, cari)
